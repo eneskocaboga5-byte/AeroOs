@@ -23,3 +23,5 @@ This project is open-source and licensed under the terms of the **GNU General Pu
 
 ## 🤝 Contributing
 Feel free to fork this project, report bugs via issues, or submit Pull Requests (PRs) to expand the `apm` ecosystem or kernel capabilities!
+## Note:
+This system is a prototype and is not recommended for daily use at this time; we assume you have read this.
