@@ -1,0 +1,2 @@
+#!/bin/sh
+echo "[AeroOs]: apk komutu devre disidir. Lutfen tescilli paket yoneticimizi kullanin: apm"

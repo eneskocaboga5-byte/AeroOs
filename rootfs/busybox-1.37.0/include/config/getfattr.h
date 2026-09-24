@@ -1,1 +1,0 @@
-#define CONFIG_GETFATTR 1

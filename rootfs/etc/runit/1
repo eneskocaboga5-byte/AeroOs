@@ -1,0 +1,27 @@
+#!/bin/sh
+mount -o remount,rw /
+mount -t proc none /proc
+mount -t sysfs none /sys
+mount -t devtmpfs none /dev 2>/dev/null
+
+clear
+echo "========================================================"
+echo "        AeroOs v4.0 Powered by Runit Init System        "
+echo "               Architect: Enes Kocaboga                 "
+echo "========================================================"
+echo ""
+echo " [*] Ag kartlari (eth0 / wlan0) zorla ayaga kaldiriliyor..."
+ifconfig lo up
+ifconfig eth0 up 2>/dev/null
+ifconfig wlan0 up 2>/dev/null
+
+echo " [*] DHCP Sunucusundan IP adresi talep ediliyor..."
+# QEMU standart ag yapilandirmasina gore manuel yedek IP tanimliyoruz (DHCP duserse diye)
+ifconfig eth0 10.0.2.15 netmask 255.255.255.0 up 2>/dev/null
+route add default gw 10.0.2.2 eth0 2>/dev/null
+
+# DHCP ag motorunu arka planda tıkır tıkır tetikliyoruz
+udhcpc -i eth0 -q -n -t 5 2>/dev/null
+
+echo " [*] AeroOs Ag & Wifi hatti basariyla muhurlendi!"
+echo ""

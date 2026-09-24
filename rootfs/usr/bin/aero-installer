@@ -1,0 +1,101 @@
+#!/bin/sh
+# AeroOs v4.0 Advanced TUI Installer
+# Lead Architect: Enes Kocaboga
+
+TMP_MENU="/tmp/aero_menu"
+TMP_DATA="/tmp/aero_data"
+
+# Karşılama Ekranı
+dialog --backtitle "AeroOs v4.0 - Kurulum Sihirbazı (Enes Kocaboga Altyapısı)" \
+       --title " HOŞ GELDİNİZ " \
+       --msgbox "AeroOs v4.0 Kurulum Sihirbazına Hoş Geldiniz!\n\nBu sihirbaz, sisteminizi ok tuşlarını kullanarak diske kurmanızı ve yapılandırmanızı sağlayacaktır." 12 65
+
+while true; do
+    # Ana Menü (Ok tuşları ile gezilebilir)
+    dialog --backtitle "AeroOs v4.0 - Gelişmiş Kurulum Yönetimi" \
+           --title " ANA MENÜ " \
+           --menu "Lütfen ok tuşları ile bir işlem seçin:" 15 60 5 \
+           1 "Görsel Disk Bölümleme (cfdisk)" \
+           2 "Klasik Disk Bölümleme (fdisk)" \
+           3 "Dosya Sistemi Oluştur (Format)" \
+           4 "Kullanıcı Hesap Yönetimi" \
+           5 "Sistemi Kur ve Yeniden Başlat" 2> "$TMP_MENU"
+
+    CHOICE=$(cat "$TMP_MENU")
+
+    case "$CHOICE" in
+        1)
+            dialog --title " Disk Seçimi (cfdisk) " --inputbox "Bölümlenecek diski yazın (Örn: /dev/sda):" 10 50 "/dev/sda" 2> "$TMP_DATA"
+            TARGET_DISK=$(cat "$TMP_DATA")
+            if [ -n "$TARGET_DISK" ]; then
+                clear
+                cfdisk "$TARGET_DISK"
+            fi
+            ;;
+        2)
+            DISKS=$(fdisk -l 2>/dev/null | grep "Disk /dev/")
+            dialog --title " Mevcut Diskler " --msgbox "$DISKS" 12 60
+            dialog --title " fdisk Motoru " --inputbox "Bölümlemek istediğiniz diski yazın (Örn: /dev/sda):" 10 50 "/dev/sda" 2> "$TMP_DATA"
+            TARGET_DISK=$(cat "$TMP_DATA")
+            if [ -n "$TARGET_DISK" ]; then
+                clear
+                fdisk "$TARGET_DISK"
+            fi
+            ;;
+        3)
+            # Gelişmiş Format Menüsü (ext4, btrfs, xfs)
+            dialog --title " Dosya Sistemi Seçimi " --menu "Format tipini seçin:" 14 55 3 \
+                   "ext4"  "Standart Kararlı Linux Dosya Sistemi" \
+                   "btrfs" "Modern Snapshot Destekli Dosya Sistemi" \
+                   "xfs"   "Yüksek Performanslı Kurumsal Dosya Sistemi" 2> "$TMP_MENU"
+            FSTYPE=$(cat "$TMP_MENU")
+            
+            if [ -n "$FSTYPE" ]; then
+                dialog --title " Disk Seçimi " --inputbox "Formatlanacak hedef bölümü yazın (Örn: /dev/sda1):" 10 50 "/dev/sda1" 2> "$TMP_DATA"
+                TARGET_PART=$(cat "$TMP_DATA")
+                
+                if [ -n "$TARGET_PART" ]; then
+                    dialog --title " UYARI " --yesno "$TARGET_PART bölümü $FSTYPE olarak formatlanacak. Onaylıyor musunuz?" 10 60
+                    if [ $? -eq 0 ]; then
+                        clear
+                        echo "Disk $FSTYPE olarak formatlanıyor, lütfen bekleyin..."
+                        
+                        # btrfs bazen zorlama isteyebilir (-f şalteri)
+                        if [ "$FSTYPE" = "btrfs" ]; then
+                            mkfs.btrfs -f "$TARGET_PART"
+                        elif [ "$FSTYPE" = "xfs" ]; then
+                            mkfs.xfs -f "$TARGET_PART"
+                        else
+                            mkfs.ext4 "$TARGET_PART"
+                        fi
+                        
+                        dialog --title " Başarılı " --msgbox "Format işlemi başarıyla tamamlandı!" 8 40
+                    fi
+                fi
+            fi
+            ;;
+        4)
+            dialog --title " Kullanıcı Adı " --inputbox "Yeni kullanıcı adını girin:" 10 50 "" 2> "$TMP_DATA"
+            NEW_USER=$(cat "$TMP_DATA")
+            if [ -n "$NEW_USER" ]; then
+                clear
+                adduser "$NEW_USER"
+                dialog --title " Başarılı " --msgbox "$NEW_USER kullanıcısı sisteme kazındı!" 8 45
+            fi
+            ;;
+        5)
+            dialog --title " Kurulum Sonu " --yesno "Kurulum tamamlandı! Sistem yeniden başlatılsın mı?" 10 50
+            if [ $? -eq 0 ]; then
+                clear
+                echo "AeroOs v4.0 kapatılıyor..."
+                reboot
+                exit 0
+            fi
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
+rm -f "$TMP_MENU" "$TMP_DATA"
